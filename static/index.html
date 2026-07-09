@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Interview Preparation Agent by ABD</title>
+<title>ABD's Interview Preparation Agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <style>
@@ -143,12 +143,9 @@
 </style>
 </head>
 <body>
-<div style="background:#1B2A41;color:#FFD43B;text-align:center;font:600 13px 'Inter',sans-serif;padding:8px;letter-spacing:.02em">
-  PREVIEW — sample data, no live AI calls · click around, everything is navigable
-</div>
 <header>
-  <h1>Interview Preparation<span class="hi">by</span> ABD</h1>
-  <p class="sub">Study plan → voice mock interviews → honest scoring → debrief.</p>
+  <h1>ABD's <span class="hi">Interview Preparation</span> Agent</h1>
+  <p class="sub">Study plan → voice mock interviews → coding rounds → honest scoring → debrief.</p>
   <div id="stageRail" class="stage-rail"></div>
 </header>
 <main>
@@ -161,53 +158,16 @@
 // Thin view layer. All agent logic (prompts, Claude calls) is in app.py.
 // =====================================================================
 
-const MOCK_PLAN = {
-  gap_analysis: [
-    "No system design experience shown — target role expects it at this level",
-    "Resume covers SQL well but no distributed caching / scaling exposure",
-    "Few quantified leadership or ownership examples for a senior bar",
-  ],
-  focus_areas: ["System design", "Distributed caching", "Behavioral storytelling", "SQL optimization"],
-  weeks: [
-    { week: 1, theme: "Foundations & gap-closing", tasks: ["Review CAP theorem + consistency models", "Solve 5 medium DSA problems", "Draft 3 STAR stories from past projects"] },
-    { week: 2, theme: "System design core", tasks: ["Design a URL shortener end-to-end", "Study Redis caching patterns", "Mock system design with a peer"] },
-    { week: 3, theme: "Company-specific prep", tasks: ["Research target company's tech stack", "Two timed coding rounds", "Refine behavioral answers with metrics"] },
-    { week: 4, theme: "Final polish", tasks: ["Full mock interview loop", "Review weak spots from mocks", "Rest before interview day"] },
-  ],
-};
-const MOCK_INTEL = {
-  process: "3 rounds: phone screen, technical (DSA + system design), then a behavioral loop with the hiring manager.",
-  hot_topics: ["Distributed caching", "API rate limiting", "Ownership stories", "Trade-off discussions"],
-};
-const MOCK_QA = [
-  { question: "Tell me about a time you had to trade off speed against code quality.", category: "behavioral", score: 8, feedback: "Clear STAR structure, good metric at the end.", tip: "Name the trade-off explicitly earlier in the answer." },
-  { question: "Design a rate limiter for a public API.", category: "system design", score: 6, feedback: "Covered token bucket well, missed distributed edge cases.", tip: "Mention how limits sync across multiple servers." },
-  { question: "Given an array, find the longest subarray with sum ≤ k.", category: "coding", score: 7, feedback: "Correct sliding-window approach, clean code.", tip: "Talk through complexity out loud before coding." },
-  { question: "How would you optimize a slow SQL query scanning 10M rows?", category: "technical", score: 9, feedback: "Great use of indexing and EXPLAIN-driven reasoning.", tip: "Mention read replicas as a scale option too." },
-  { question: "Walk me through a project where you disagreed with a teammate.", category: "behavioral", score: 5, feedback: "Resolution stayed vague — what actually changed after?", tip: "End with the concrete outcome, not just the discussion." },
-];
-const MOCK_TRANSCRIPT = MOCK_QA.flatMap((q) => ([
-  { role: "coach", text: q.question, category: q.category },
-  { role: "you", text: "(sample answer for preview)", score: q.score, feedback: q.feedback, tip: q.tip },
-]));
-const MOCK_REVIEW = {
-  readiness: 78,
-  summary: "Solid technical fundamentals with clear communication; system design trade-off reasoning is the main gap before you're interview-ready.",
-  strengths: ["Explains time complexity clearly", "Structures answers with the STAR method", "Good ownership examples"],
-  improve: ["Rushes through system design trade-offs", "Under-specifies edge cases in coding answers"],
-  next_steps: ["Practice 3 more system design mocks", "Time-box coding answers to 20 minutes", "Review caching strategies (write-through vs write-back)"],
-};
-
 const S = {
-  stage: "review",           // setup | plan | interview | review — preview starts on the richest screen
-  profile: { domain: "Backend engineering", role: "SDE-2 at a product company", exp: "2-5 years", weeks: "4", company: "Flipkart" },
-  resumeText: "5 yrs experience, Java/Spring, strong SQL, no distributed systems exposure yet.",
+  stage: "setup",           // setup | plan | interview | review
+  profile: { domain: "", role: "", exp: "0-2 years", weeks: "4", company: "" },
+  resumeText: "",
   pdf: null,                // { name, b64 }
-  plan: MOCK_PLAN,
-  intel: MOCK_INTEL,              // live company research (fetched once per session)
+  plan: null,
+  intel: null,              // live company research (fetched once per session)
   focus: "Full mock (mixed)",
-  transcript: MOCK_TRANSCRIPT,           // { role:'coach'|'you', text, category?, score?, feedback?, tip? }
-  review: MOCK_REVIEW,
+  transcript: [],           // { role:'coach'|'you', text, category?, score?, feedback?, tip? }
+  review: null,
   voiceOn: true,
   listening: false,
   loading: "",              // spinner label, "" = not loading
@@ -221,22 +181,15 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
 
 function showError(msg) { $("error").innerHTML = msg ? `<div class="error">${esc(msg)}</div>` : ""; }
 
-let mockQIdx = 0;
 async function api(path, body) {
-  await new Promise((r) => setTimeout(r, 400)); // simulate network latency
-  if (path === "/api/plan") return { resume_text: S.resumeText || "(sample resume text)", plan: MOCK_PLAN };
-  if (path === "/api/company_intel") return { intel: MOCK_INTEL };
-  if (path === "/api/question") {
-    const q = MOCK_QA[mockQIdx % MOCK_QA.length];
-    mockQIdx++;
-    return { question: q.question, category: q.category };
-  }
-  if (path === "/api/answer") {
-    const q = MOCK_QA[(mockQIdx - 1 + MOCK_QA.length) % MOCK_QA.length];
-    return { score: q.score, feedback: q.feedback, tip: q.tip };
-  }
-  if (path === "/api/review") return MOCK_REVIEW;
-  return {};
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
 }
 
 function payload() {
