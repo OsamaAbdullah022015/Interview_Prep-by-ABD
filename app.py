@@ -54,6 +54,7 @@ def ask_llm(prompt: str, max_tokens: int = 1024) -> str:
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
+        reasoning_effort="none"
     )
     return resp.choices[0].message.content or ""
 
