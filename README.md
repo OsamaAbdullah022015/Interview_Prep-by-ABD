@@ -23,7 +23,7 @@ Requirements: Python 3.9+
 ```bash
 # 1. Clone and install
 git clone <your-repo-url>
-cd abd-interview-agent-v3
+cd Interview_Prep-by-ABD
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
