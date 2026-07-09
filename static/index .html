@@ -10,16 +10,32 @@
   :root {
     --bg:#EEF1F6; --card:#FFF; --ink:#1B2A41; --ink-soft:#5A6B84;
     --line:#D8DEE9; --hi:#FFD43B; --good:#2F9E68; --warn:#D9662C; --bad:#C43D3D;
+    --wash1: rgba(255,212,59,.16); --wash2: rgba(47,158,104,.12);
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font-family:'Inter','Segoe UI',system-ui,sans-serif; }
+  body {
+    margin:0; color:var(--ink); font-family:'Inter','Segoe UI',system-ui,sans-serif;
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 6%, var(--wash1), transparent 38%),
+      radial-gradient(circle at 92% 14%, var(--wash2), transparent 42%),
+      radial-gradient(circle at 100% 100%, rgba(27,42,65,.05), transparent 45%),
+      radial-gradient(rgba(27,42,65,.09) 1px, transparent 1.4px);
+    background-repeat: no-repeat, no-repeat, no-repeat, repeat;
+    background-size: auto, auto, auto, 24px 24px;
+    background-attachment: fixed, fixed, fixed, scroll;
+    transition: background-image .5s ease;
+  }
+  body[data-stage="interview"] { --wash1: rgba(255,212,59,.10); --wash2: rgba(196,61,61,.10); }
+  body[data-stage="review"] { --wash1: rgba(47,158,104,.16); --wash2: rgba(255,212,59,.10); }
   header, main { max-width:860px; margin:0 auto; padding:0 20px; }
   header { padding-top:28px; }
   h1 { font-family:'Archivo Black','Arial Black',sans-serif; font-size:28px; margin:0; letter-spacing:-0.01em; }
   .sub { color:var(--ink-soft); margin:6px 0 0; font-size:14px; }
   .hi { background:linear-gradient(transparent 55%, var(--hi) 55%, var(--hi) 92%, transparent 92%); padding:0 2px; }
   main { padding:20px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:14px; transition:box-shadow .18s ease; }
+  .card:hover { box-shadow:0 6px 20px rgba(27,42,65,.08); }
   .label { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px; }
   .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:0 20px; }
   .field { display:block; margin-bottom:16px; }
@@ -33,9 +49,12 @@
   button:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
   .btn { font-weight:600; font-size:14px; padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-family:inherit; }
   .btn:disabled { opacity:.5; cursor:not-allowed; }
-  .btn-primary { background:var(--ink); color:#fff; }
-  .btn-accent { background:var(--hi); color:var(--ink); }
-  .btn-ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .btn-primary { background:var(--ink); color:#fff; transition:background .15s ease; }
+  .btn-primary:hover:not(:disabled) { background:#0F1928; }
+  .btn-accent { background:var(--hi); color:var(--ink); transition:filter .15s ease; }
+  .btn-accent:hover:not(:disabled) { filter:brightness(.94); }
+  .btn-ghost { background:transparent; color:var(--ink); border:1px solid var(--line); transition:background .15s ease, border-color .15s ease; }
+  .btn-ghost:hover:not(:disabled) { background:rgba(27,42,65,.05); border-color:var(--ink-soft); }
   .btn-danger { background:var(--bad); color:#fff; animation:pulse 1.2s infinite; }
   .error { background:#FCEBEA; border:1px solid #E8B4B0; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
   .spinner { display:flex; align-items:center; gap:10px; color:var(--ink-soft); font-size:14px; padding:12px; }
@@ -47,6 +66,8 @@
   .gap-row:last-child { border-bottom:none; }
   .coach { border-left:4px solid var(--hi); }
   .you { background:#F6F8FB; }
+  .gap-card { border-left:4px solid var(--warn); }
+  .focus-card { border-left:4px solid var(--good); }
   .qtext { font-size:15px; font-weight:600; white-space:pre-wrap; }
   .atext { font-size:14px; white-space:pre-wrap; }
   .atext.code { font-family:'JetBrains Mono',Consolas,monospace; font-size:13px; }
@@ -64,6 +85,38 @@
   .cols .card { margin-bottom:0; }
   .listening { font-size:13px; color:var(--bad); font-weight:600; }
   .pdf-ok { margin-top:8px; font-size:13px; color:var(--good); font-weight:600; }
+
+  /* ---- stage rail ---- */
+  .stage-rail { display:flex; gap:6px; margin:18px 0 4px; }
+  .stage-step { flex:1; display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--ink-soft); padding-bottom:10px; border-bottom:3px solid var(--line); transition:border-color .2s ease, color .2s ease; }
+  .stage-step .num { width:19px; height:19px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; transition:background .2s ease, border-color .2s ease; }
+  .stage-step.active { color:var(--ink); border-bottom-color:var(--hi); }
+  .stage-step.active .num { background:var(--hi); border-color:var(--hi); color:var(--ink); }
+  .stage-step.done { color:var(--ink); border-bottom-color:var(--ink); }
+  .stage-step.done .num { background:var(--ink); border-color:var(--ink); color:#fff; }
+  @media (max-width:560px) { .stage-step .label-text { display:none; } }
+
+  /* ---- weekly plan timeline ---- */
+  .timeline { position:relative; margin-left:9px; padding-left:24px; border-left:2px solid var(--line); }
+  .timeline .card { position:relative; }
+  .timeline .card::before { content:""; position:absolute; left:-31px; top:22px; width:11px; height:11px; border-radius:50%; background:var(--hi); box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--line); }
+
+  /* ---- interview chat rhythm ---- */
+  .msg-row { display:flex; margin-bottom:14px; }
+  .msg-row.coach-row { justify-content:flex-start; }
+  .msg-row.you-row { justify-content:flex-end; }
+  .msg-row .card { max-width:82%; margin-bottom:0; }
+  @media (max-width:600px) { .msg-row .card { max-width:100%; } }
+
+  /* ---- readiness gauge ---- */
+  .gauge-shell { position:relative; width:180px; height:180px; margin:4px auto 0; }
+  .gauge-shell svg { width:100%; height:100%; transform:rotate(-90deg); }
+  .gauge-shell circle { fill:none; stroke-width:12; }
+  .gauge-shell .track { stroke:var(--line); }
+  .gauge-shell .fill { stroke:var(--ink); stroke-linecap:round; transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1); }
+  .gauge-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .gauge-center .display-num { font-size:48px; }
+
   @keyframes spin { to { transform:rotate(360deg); } }
   @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
   @media (prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; } }
@@ -73,6 +126,7 @@
 <header>
   <h1>ABD's <span class="hi">Interview Preparation</span> Agent</h1>
   <p class="sub">Study plan → voice mock interviews → coding rounds → honest scoring → debrief.</p>
+  <div id="stageRail" class="stage-rail"></div>
 </header>
 <main>
   <div id="error"></div>
@@ -201,12 +255,34 @@ function scoreBadge(score) {
   return `<span class="score" style="background:${color}">${score}<small>/10</small></span>`;
 }
 
+const STAGE_ORDER = ["setup", "plan", "interview", "review"];
+const STAGE_LABELS = { setup: "Profile", plan: "Study plan", interview: "Mock interview", review: "Debrief" };
+
+function renderStageRail() {
+  const el = $("stageRail");
+  if (!el) return;
+  const cur = STAGE_ORDER.indexOf(S.stage);
+  el.innerHTML = STAGE_ORDER.map((id, i) => {
+    const cls = i < cur ? "done" : i === cur ? "active" : "";
+    return `<div class="stage-step ${cls}"><span class="num">${i < cur ? "✓" : i + 1}</span><span class="label-text">${esc(STAGE_LABELS[id])}</span></div>`;
+  }).join("");
+}
+
+function animateGauge() {
+  const el = $("gaugeFill");
+  if (!el) return;
+  const target = el.dataset.offset;
+  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.strokeDashoffset = target; }));
+}
+
 function render() {
+  document.body.dataset.stage = S.stage;
+  renderStageRail();
   const app = $("app");
   if (S.stage === "setup") app.innerHTML = viewSetup();
   else if (S.stage === "plan") app.innerHTML = viewPlan();
   else if (S.stage === "interview") { app.innerHTML = viewInterview(); $("chatEnd")?.scrollIntoView({ behavior: "smooth" }); }
-  else if (S.stage === "review") app.innerHTML = viewReview();
+  else if (S.stage === "review") { app.innerHTML = viewReview(); animateGauge(); }
 }
 
 // ---------- SETUP ----------
@@ -268,12 +344,13 @@ function viewPlan() {
   const p = S.plan;
   const focusOpts = focusOptions();
   return `
-  <div class="card"><div class="label">Gap analysis</div>
+  <div class="card gap-card"><div class="label">Gap analysis</div>
     ${(p.gap_analysis || []).map((g) => `<div class="gap-row">${esc(g)}</div>`).join("")}
   </div>
-  <div class="card"><div class="label">Focus areas</div>
+  <div class="card focus-card"><div class="label">Focus areas</div>
     ${(p.focus_areas || []).map((f) => `<span class="chip">${esc(f)}</span>`).join("")}
   </div>
+  <div class="timeline">
   ${(p.weeks || []).map((w) => `
     <div class="card">
       <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
@@ -282,6 +359,7 @@ function viewPlan() {
       </div>
       ${(w.tasks || []).map((t) => `<div class="row-item"><span class="arrow">→</span>${esc(t)}</div>`).join("")}
     </div>`).join("")}
+  </div>
   <div class="card">
     <label class="field" style="max-width:340px"><div class="label">Mock interview focus</div>
       <select id="focusSel" onchange="S.focus=this.value">${focusOpts}</select></label>
@@ -306,26 +384,26 @@ function viewInterview() {
 
   const messages = S.transcript.map((t, i) => {
     if (t.role === "coach") {
-      return `<div class="card coach">
+      return `<div class="msg-row coach-row"><div class="card coach">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div class="label" style="margin-bottom:6px">Interviewer · ${esc(t.category)}</div>
           ${S.voiceOn ? `<button class="speak-btn" title="Replay question" onclick="replayQuestion(${i})">🔊</button>` : ""}
         </div>
         <div class="qtext">${esc(t.text)}</div>
-      </div>`;
+      </div></div>`;
     }
     const prevCoding = S.transcript[i - 1]?.category === "coding";
-    return `<div class="card you">
+    return `<div class="msg-row you-row"><div class="card you">
       <div class="label">You</div>
       <div class="atext ${prevCoding ? "code" : ""}">${esc(t.text)}</div>
       ${t.score ? `<div class="fb">${scoreBadge(t.score)}
         <div style="margin-top:6px">${esc(t.feedback)}</div>
         <div class="tip">Tip: ${esc(t.tip)}</div></div>` : ""}
-    </div>`;
+    </div></div>`;
   }).join("");
 
   const intelBanner = S.intel ? `
-    <div class="card" style="border-left:4px solid var(--good);padding:14px 20px">
+    <div class="card" style="border-left:4px solid var(--good);padding:14px 20px;background:linear-gradient(0deg, rgba(47,158,104,.05), rgba(47,158,104,.05)), var(--card)">
       <div class="label" style="margin-bottom:8px">Live intel · ${esc(S.profile.company)}</div>
       <div style="font-size:13px;margin-bottom:8px">${esc(S.intel.process || "")}</div>
       <div>${(S.intel.hot_topics || []).map((t) => `<span class="chip" style="font-size:12px;padding:3px 8px">${esc(t)}</span>`).join("")}</div>
@@ -440,16 +518,29 @@ window.endInterview = async function () {
 // ---------- REVIEW ----------
 function viewReview() {
   const r = S.review;
+  const pct = Math.max(0, Math.min(100, Number(r.readiness) || 0));
+  const C = 2 * Math.PI * 70;
+  const offset = C * (1 - pct / 100);
+  const tier = pct >= 70 ? "var(--good)" : pct >= 45 ? "var(--warn)" : "var(--bad)";
   return `
   <div class="card center">
-    <div class="display-num"><span class="hi">${esc(r.readiness)}</span><span style="font-size:20px;color:var(--ink-soft)"> /100</span></div>
-    <div class="label" style="margin-top:6px">Readiness</div>
+    <div class="gauge-shell">
+      <svg viewBox="0 0 160 160">
+        <circle class="track" cx="80" cy="80" r="70"></circle>
+        <circle id="gaugeFill" class="fill" cx="80" cy="80" r="70" style="stroke:${tier}"
+          stroke-dasharray="${C}" stroke-dashoffset="${C}" data-offset="${offset}"></circle>
+      </svg>
+      <div class="gauge-center">
+        <div class="display-num"><span style="background:linear-gradient(transparent 55%, ${tier} 55%, ${tier} 92%, transparent 92%);padding:0 2px">${esc(pct)}</span></div>
+        <div class="label" style="margin-top:2px">/ 100 readiness</div>
+      </div>
+    </div>
     <p style="font-size:14px;max-width:520px;margin:12px auto 0">${esc(r.summary)}</p>
   </div>
   <div class="cols">
-    <div class="card"><div class="label" style="color:var(--good)">Strengths</div>
+    <div class="card" style="border-left:4px solid var(--good)"><div class="label" style="color:var(--good)">Strengths</div>
       ${(r.strengths || []).map((s) => `<div style="font-size:14px;padding:4px 0">${esc(s)}</div>`).join("")}</div>
-    <div class="card"><div class="label" style="color:var(--warn)">Work on</div>
+    <div class="card" style="border-left:4px solid var(--warn)"><div class="label" style="color:var(--warn)">Work on</div>
       ${(r.improve || []).map((s) => `<div style="font-size:14px;padding:4px 0">${esc(s)}</div>`).join("")}</div>
   </div>
   <div class="card"><div class="label">Drill next</div>
