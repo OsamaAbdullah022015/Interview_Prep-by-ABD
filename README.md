@@ -1,4 +1,4 @@
-# ABD's Interview Preparation Agent — v3 (provider-agnostic)
+# ABD's Interview Preparation Agent
 
 An AI-powered interview coach: personalized study plans from your resume, voice-enabled mock interviews with adaptive coding rounds, honest per-answer scoring, live company-specific research, and a readiness debrief.
 
