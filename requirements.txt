@@ -1,0 +1,6 @@
+fastapi>=0.115
+uvicorn>=0.30
+litellm>=1.50
+pypdf>=5.0
+requests>=2.32
+python-dotenv>=1.0

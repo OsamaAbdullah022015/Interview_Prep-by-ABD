@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ABD's Interview Preparation Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#EEF1F6; --card:#FFF; --ink:#1B2A41; --ink-soft:#5A6B84;
+    --line:#D8DEE9; --hi:#FFD43B; --good:#2F9E68; --warn:#D9662C; --bad:#C43D3D;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:'Inter','Segoe UI',system-ui,sans-serif; }
+  header, main { max-width:860px; margin:0 auto; padding:0 20px; }
+  header { padding-top:28px; }
+  h1 { font-family:'Archivo Black','Arial Black',sans-serif; font-size:28px; margin:0; letter-spacing:-0.01em; }
+  .sub { color:var(--ink-soft); margin:6px 0 0; font-size:14px; }
+  .hi { background:linear-gradient(transparent 55%, var(--hi) 55%, var(--hi) 92%, transparent 92%); padding:0 2px; }
+  main { padding:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:14px; }
+  .label { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:0 20px; }
+  .field { display:block; margin-bottom:16px; }
+  input[type=text], select, textarea {
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line);
+    font-family:inherit; font-size:14px; color:var(--ink); background:#FBFCFE;
+  }
+  textarea { min-height:120px; resize:vertical; }
+  textarea.code { font-family:'JetBrains Mono',Consolas,monospace; font-size:13px; min-height:220px; }
+  input:focus, select:focus, textarea:focus { border-color:var(--ink); outline:none; }
+  button:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .btn { font-weight:600; font-size:14px; padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-family:inherit; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-primary { background:var(--ink); color:#fff; }
+  .btn-accent { background:var(--hi); color:var(--ink); }
+  .btn-ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .btn-danger { background:var(--bad); color:#fff; animation:pulse 1.2s infinite; }
+  .error { background:#FCEBEA; border:1px solid #E8B4B0; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+  .spinner { display:flex; align-items:center; gap:10px; color:var(--ink-soft); font-size:14px; padding:12px; }
+  .spinner .dot { width:16px; height:16px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--ink); animation:spin .8s linear infinite; }
+  .chip { background:var(--hi); border-radius:6px; padding:4px 10px; font-size:13px; font-weight:600; display:inline-block; margin:0 8px 8px 0; }
+  .row-item { font-size:14px; padding:5px 0; display:flex; gap:8px; }
+  .arrow { color:var(--good); font-weight:700; }
+  .gap-row { font-size:14px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .gap-row:last-child { border-bottom:none; }
+  .coach { border-left:4px solid var(--hi); }
+  .you { background:#F6F8FB; }
+  .qtext { font-size:15px; font-weight:600; white-space:pre-wrap; }
+  .atext { font-size:14px; white-space:pre-wrap; }
+  .atext.code { font-family:'JetBrains Mono',Consolas,monospace; font-size:13px; }
+  .fb { margin-top:10px; padding-top:10px; border-top:1px solid var(--line); font-size:13px; }
+  .fb .tip { color:var(--ink-soft); margin-top:4px; }
+  .score { display:inline-flex; align-items:baseline; gap:2px; color:#fff; border-radius:6px; padding:2px 8px; font-weight:700; font-size:13px; }
+  .score small { font-size:10px; opacity:.8; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px; font-size:13px; color:var(--ink-soft); }
+  .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .voice-toggle { display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; }
+  .speak-btn { border:none; background:transparent; cursor:pointer; font-size:16px; }
+  .display-num { font-family:'Archivo Black',sans-serif; font-size:56px; line-height:1; }
+  .center { text-align:center; padding:32px; }
+  .cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; margin-bottom:14px; }
+  .cols .card { margin-bottom:0; }
+  .listening { font-size:13px; color:var(--bad); font-weight:600; }
+  .pdf-ok { margin-top:8px; font-size:13px; color:var(--good); font-weight:600; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+  @media (prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>ABD's <span class="hi">Interview Preparation</span> Agent</h1>
+  <p class="sub">Study plan → voice mock interviews → coding rounds → honest scoring → debrief.</p>
+</header>
+<main>
+  <div id="error"></div>
+  <div id="app"></div>
+</main>
+
+<script>
+// =====================================================================
+// Thin view layer. All agent logic (prompts, Claude calls) is in app.py.
+// =====================================================================
+
+const S = {
+  stage: "setup",           // setup | plan | interview | review
+  profile: { domain: "", role: "", exp: "0-2 years", weeks: "4", company: "" },
+  resumeText: "",
+  pdf: null,                // { name, b64 }
+  plan: null,
+  intel: null,              // live company research (fetched once per session)
+  focus: "Full mock (mixed)",
+  transcript: [],           // { role:'coach'|'you', text, category?, score?, feedback?, tip? }
+  review: null,
+  voiceOn: true,
+  listening: false,
+  loading: "",              // spinner label, "" = not loading
+};
+let recognition = null;
+
+// ---------- helpers ----------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function showError(msg) { $("error").innerHTML = msg ? `<div class="error">${esc(msg)}</div>` : ""; }
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+function payload() {
+  return {
+    profile: S.profile, resume_text: S.resumeText, focus: S.focus,
+    transcript: S.transcript,
+    company_intel: S.intel ? JSON.stringify(S.intel) : "",
+  };
+}
+
+function focusOptions() {
+  return ["Full mock (mixed)", ...((S.plan && S.plan.focus_areas) || []),
+    "Coding round only", "Technical round only", "Behavioral only", "System design only", "Resume deep-dive"]
+    .map((f) => `<option ${f === S.focus ? "selected" : ""}>${esc(f)}</option>`).join("");
+}
+
+// ---------- voice ----------
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1;
+  window.speechSynthesis.speak(u);
+}
+window.replayQuestion = (i) => speak(S.transcript[i].text);
+
+window.toggleMic = function () {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showError("Speech recognition isn't supported in this browser. Chrome or Edge work best."); return; }
+  if (S.listening) { recognition?.stop(); return; }
+  showError("");
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = navigator.language || "en-US";
+  recognition.onresult = (e) => {
+    let finalText = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+    }
+    const box = $("answerBox");
+    if (finalText && box) box.value = (box.value + " " + finalText).trim();
+  };
+  recognition.onerror = (e) => {
+    if (e.error === "not-allowed") showError("Microphone access was blocked. Allow it in your browser settings.");
+    S.listening = false; renderMicState();
+  };
+  recognition.onend = () => { S.listening = false; renderMicState(); };
+  recognition.start();
+  S.listening = true; renderMicState();
+};
+
+function renderMicState() {
+  const b = $("micBtn");
+  if (!b) return;
+  b.className = "btn " + (S.listening ? "btn-danger" : "btn-ghost");
+  b.textContent = S.listening ? "⏹ Stop mic" : "🎙 Answer by voice";
+  const l = $("listeningLabel");
+  if (l) l.style.display = S.listening ? "inline" : "none";
+}
+
+window.setVoice = (checked) => { S.voiceOn = checked; if (!checked) window.speechSynthesis?.cancel(); };
+
+// ---------- PDF ----------
+window.onPdfSelect = function (input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.type !== "application/pdf") { showError("Please upload a PDF file."); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    S.pdf = { name: file.name, b64: reader.result.split(",")[1] };
+    $("pdfStatus").innerHTML = `<div class="pdf-ok">✓ ${esc(file.name)} attached — it will be parsed automatically</div>`;
+  };
+  reader.onerror = () => showError("Could not read the PDF file.");
+  reader.readAsDataURL(file);
+};
+
+// ---------- render ----------
+function spinner(label) { return `<div class="spinner"><div class="dot"></div>${esc(label)}</div>`; }
+
+function scoreBadge(score) {
+  const color = score >= 7 ? "var(--good)" : score >= 5 ? "var(--warn)" : "var(--bad)";
+  return `<span class="score" style="background:${color}">${score}<small>/10</small></span>`;
+}
+
+function render() {
+  const app = $("app");
+  if (S.stage === "setup") app.innerHTML = viewSetup();
+  else if (S.stage === "plan") app.innerHTML = viewPlan();
+  else if (S.stage === "interview") { app.innerHTML = viewInterview(); $("chatEnd")?.scrollIntoView({ behavior: "smooth" }); }
+  else if (S.stage === "review") app.innerHTML = viewReview();
+}
+
+// ---------- SETUP ----------
+function viewSetup() {
+  const p = S.profile;
+  const expOpts = ["0-2 years", "2-5 years", "5-10 years", "10+ years"]
+    .map((o) => `<option ${o === p.exp ? "selected" : ""}>${o}</option>`).join("");
+  const weekOpts = ["2", "4", "6"]
+    .map((o) => `<option ${o === p.weeks ? "selected" : ""}>${o}</option>`).join("");
+  return `
+  <div class="card">
+    <div class="grid2">
+      <label class="field"><div class="label">Domain</div>
+        <input type="text" id="domain" value="${esc(p.domain)}" placeholder="e.g. Backend engineering, Data science, Product"></label>
+      <label class="field"><div class="label">Target role</div>
+        <input type="text" id="role" value="${esc(p.role)}" placeholder="e.g. SDE-2 at a product company"></label>
+      <label class="field"><div class="label">Target company (optional — enables live web research)</div>
+        <input type="text" id="company" value="${esc(p.company)}" placeholder="e.g. Google, Flipkart, Zoho"></label>
+      <label class="field"><div class="label">Experience</div>
+        <select id="exp">${expOpts}</select></label>
+      <label class="field"><div class="label">Prep timeline (weeks)</div>
+        <select id="weeks">${weekOpts}</select></label>
+    </div>
+    <div class="field"><div class="label">Resume — upload a PDF</div>
+      <input type="file" accept="application/pdf" onchange="onPdfSelect(this)" style="font-size:13px">
+      <div id="pdfStatus">${S.pdf ? `<div class="pdf-ok">✓ ${esc(S.pdf.name)} attached</div>` : ""}</div>
+    </div>
+    <label class="field"><div class="label">…or paste resume text ${S.pdf ? "(optional override)" : ""}</div>
+      <textarea id="resume" placeholder="Paste resume text here — the plan and questions are personalized against it.">${esc(S.resumeText)}</textarea></label>
+    <div id="setupAction">
+      ${S.loading ? spinner(S.loading) : `<button class="btn btn-accent" onclick="generatePlan()">Build my study plan</button>`}
+    </div>
+  </div>`;
+}
+
+window.generatePlan = async function () {
+  const company = $("company").value.trim();
+  if (company !== S.profile.company) S.intel = null;   // stale research for a different company
+  S.profile = { domain: $("domain").value.trim(), role: $("role").value.trim(), exp: $("exp").value, weeks: $("weeks").value, company };
+  S.resumeText = $("resume").value.trim();
+  showError("");
+  if (!S.profile.domain || !S.profile.role) { showError("Domain and target role are required."); return; }
+  S.loading = S.pdf && !S.resumeText ? "Reading your resume PDF and building the plan…" : "Analyzing your profile and building the plan…";
+  render();
+  try {
+    const data = await api("/api/plan", {
+      profile: S.profile, resume_text: S.resumeText, resume_pdf_b64: S.pdf?.b64 || "",
+    });
+    S.resumeText = data.resume_text;
+    S.plan = data.plan;
+    S.stage = "plan";
+  } catch (e) { showError("Could not generate the plan: " + e.message); }
+  S.loading = "";
+  render();
+};
+
+// ---------- PLAN ----------
+function viewPlan() {
+  const p = S.plan;
+  const focusOpts = focusOptions();
+  return `
+  <div class="card"><div class="label">Gap analysis</div>
+    ${(p.gap_analysis || []).map((g) => `<div class="gap-row">${esc(g)}</div>`).join("")}
+  </div>
+  <div class="card"><div class="label">Focus areas</div>
+    ${(p.focus_areas || []).map((f) => `<span class="chip">${esc(f)}</span>`).join("")}
+  </div>
+  ${(p.weeks || []).map((w) => `
+    <div class="card">
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+        <span style="font-family:'Archivo Black',sans-serif;font-size:18px">Week ${esc(w.week)}</span>
+        <span style="color:var(--ink-soft);font-size:14px">${esc(w.theme)}</span>
+      </div>
+      ${(w.tasks || []).map((t) => `<div class="row-item"><span class="arrow">→</span>${esc(t)}</div>`).join("")}
+    </div>`).join("")}
+  <div class="card">
+    <label class="field" style="max-width:340px"><div class="label">Mock interview focus</div>
+      <select id="focusSel" onchange="S.focus=this.value">${focusOpts}</select></label>
+    <label class="voice-toggle" style="margin-bottom:14px">
+      <input type="checkbox" ${S.voiceOn ? "checked" : ""} onchange="setVoice(this.checked)">
+      Voice mode (interviewer speaks, you answer by mic)
+    </label>
+    <div class="controls">
+      <button class="btn btn-accent" onclick="startInterview()">Start mock interview</button>
+      <button class="btn btn-ghost" onclick="S.stage='setup';render()">Edit profile</button>
+    </div>
+  </div>`;
+}
+
+// ---------- INTERVIEW ----------
+function viewInterview() {
+  const answered = S.transcript.filter((t) => t.role === "you" && t.score);
+  const avg = answered.length ? (answered.reduce((s, t) => s + t.score, 0) / answered.length).toFixed(1) : null;
+  const last = S.transcript[S.transcript.length - 1];
+  const awaiting = !S.loading && last?.role === "coach";
+  const isCoding = last?.category === "coding";
+
+  const messages = S.transcript.map((t, i) => {
+    if (t.role === "coach") {
+      return `<div class="card coach">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="label" style="margin-bottom:6px">Interviewer · ${esc(t.category)}</div>
+          ${S.voiceOn ? `<button class="speak-btn" title="Replay question" onclick="replayQuestion(${i})">🔊</button>` : ""}
+        </div>
+        <div class="qtext">${esc(t.text)}</div>
+      </div>`;
+    }
+    const prevCoding = S.transcript[i - 1]?.category === "coding";
+    return `<div class="card you">
+      <div class="label">You</div>
+      <div class="atext ${prevCoding ? "code" : ""}">${esc(t.text)}</div>
+      ${t.score ? `<div class="fb">${scoreBadge(t.score)}
+        <div style="margin-top:6px">${esc(t.feedback)}</div>
+        <div class="tip">Tip: ${esc(t.tip)}</div></div>` : ""}
+    </div>`;
+  }).join("");
+
+  const intelBanner = S.intel ? `
+    <div class="card" style="border-left:4px solid var(--good);padding:14px 20px">
+      <div class="label" style="margin-bottom:8px">Live intel · ${esc(S.profile.company)}</div>
+      <div style="font-size:13px;margin-bottom:8px">${esc(S.intel.process || "")}</div>
+      <div>${(S.intel.hot_topics || []).map((t) => `<span class="chip" style="font-size:12px;padding:3px 8px">${esc(t)}</span>`).join("")}</div>
+    </div>` : "";
+
+  return `
+  <div class="topbar">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="goHome()" title="Back to plan — switch rounds or edit profile">⌂ Home</button>
+      <select onchange="switchFocus(this.value)" style="padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:13px;background:#FBFCFE;max-width:220px" title="Switch round — takes effect from the next question">${focusOptions()}</select>
+      <span>${answered.length} answered ${avg ? `· avg <b style="color:var(--ink)">${avg}/10</b>` : ""}</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <label class="voice-toggle"><input type="checkbox" ${S.voiceOn ? "checked" : ""} onchange="setVoice(this.checked)"> Voice</label>
+      <button class="btn btn-ghost" onclick="endInterview()" ${S.loading || !answered.length ? "disabled" : ""}>End &amp; get debrief</button>
+    </div>
+  </div>
+  ${intelBanner}
+  ${messages}
+  ${S.loading ? spinner(S.loading) : ""}
+  ${awaiting ? `
+    <div class="card">
+      <textarea id="answerBox" class="${isCoding ? "code" : ""}" placeholder="${isCoding
+        ? "Write your solution here (any language). Talk through your approach in comments — interviewers score the thought process too."
+        : S.voiceOn
+          ? "Tap the mic and answer out loud — your words appear here. You can edit before submitting."
+          : "Answer out loud first if you can, then type the gist of what you said…"}"></textarea>
+      <div class="controls">
+        ${!isCoding ? `<button id="micBtn" class="btn btn-ghost" onclick="toggleMic()">🎙 Answer by voice</button>` : ""}
+        <button class="btn btn-primary" onclick="submitAnswer()">Submit answer</button>
+        <span id="listeningLabel" class="listening" style="display:none">Listening…</span>
+      </div>
+    </div>` : ""}
+  <div id="chatEnd"></div>`;
+}
+
+window.startInterview = async function () {
+  S.transcript = []; S.review = null; S.stage = "interview";
+  // Live company research — fetched ONCE per session, then reused in every prompt
+  if (S.profile.company && !S.intel) {
+    S.loading = `Researching ${S.profile.company}'s current interview process on the web…`;
+    render();
+    try {
+      const data = await api("/api/company_intel", payload());
+      S.intel = data.intel;
+    } catch (e) {
+      showError("Company research failed — continuing with general questions. (" + e.message + ")");
+    }
+    S.loading = "";
+  }
+  fetchQuestion();
+};
+
+window.goHome = function () {
+  const hasAnswers = S.transcript.some((t) => t.role === "you");
+  if (hasAnswers && !confirm("Leave this interview? The current transcript will be discarded. (Tip: you can also switch rounds with the dropdown without leaving.)")) return;
+  recognition?.stop();
+  window.speechSynthesis?.cancel();
+  S.transcript = []; S.loading = ""; S.stage = "plan";
+  showError(""); render();
+};
+
+window.switchFocus = function (value) {
+  S.focus = value;   // takes effect from the next question — transcript is kept
+};
+
+async function fetchQuestion() {
+  S.loading = "Coach is thinking of the next question…"; render();
+  try {
+    const q = await api("/api/question", payload());
+    S.transcript.push({ role: "coach", text: q.question, category: q.category });
+    if (S.voiceOn && q.category !== "coding") speak(q.question);
+  } catch (e) { showError("Could not fetch the next question: " + e.message); }
+  S.loading = ""; render();
+}
+
+window.submitAnswer = async function () {
+  const box = $("answerBox");
+  const text = box?.value.trim();
+  if (!text) return;
+  recognition?.stop();
+  window.speechSynthesis?.cancel();
+  const lastQ = S.transcript[S.transcript.length - 1];
+  S.transcript.push({ role: "you", text });
+  S.loading = "Evaluating your answer…"; render();
+  try {
+    const fb = await api("/api/answer", {
+      ...payload(),
+      transcript: S.transcript.slice(0, -1),   // history before this answer
+      question: lastQ.text, category: lastQ.category, answer: text,
+    });
+    Object.assign(S.transcript[S.transcript.length - 1], fb);
+    S.loading = "";
+    await fetchQuestion();
+  } catch (e) {
+    showError("Could not evaluate the answer: " + e.message);
+    S.loading = ""; render();
+  }
+};
+
+window.endInterview = async function () {
+  recognition?.stop();
+  window.speechSynthesis?.cancel();
+  S.loading = "Building your debrief…"; render();
+  try {
+    S.review = await api("/api/review", payload());
+    S.stage = "review";
+  } catch (e) { showError("Could not build the debrief: " + e.message); }
+  S.loading = ""; render();
+};
+
+// ---------- REVIEW ----------
+function viewReview() {
+  const r = S.review;
+  return `
+  <div class="card center">
+    <div class="display-num"><span class="hi">${esc(r.readiness)}</span><span style="font-size:20px;color:var(--ink-soft)"> /100</span></div>
+    <div class="label" style="margin-top:6px">Readiness</div>
+    <p style="font-size:14px;max-width:520px;margin:12px auto 0">${esc(r.summary)}</p>
+  </div>
+  <div class="cols">
+    <div class="card"><div class="label" style="color:var(--good)">Strengths</div>
+      ${(r.strengths || []).map((s) => `<div style="font-size:14px;padding:4px 0">${esc(s)}</div>`).join("")}</div>
+    <div class="card"><div class="label" style="color:var(--warn)">Work on</div>
+      ${(r.improve || []).map((s) => `<div style="font-size:14px;padding:4px 0">${esc(s)}</div>`).join("")}</div>
+  </div>
+  <div class="card"><div class="label">Drill next</div>
+    ${(r.next_steps || []).map((s) => `<div class="row-item"><span class="arrow">→</span>${esc(s)}</div>`).join("")}</div>
+  <div class="controls">
+    <button class="btn btn-accent" onclick="startInterview()">Another round</button>
+    <button class="btn btn-ghost" onclick="S.stage='plan';render()">Back to study plan</button>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
