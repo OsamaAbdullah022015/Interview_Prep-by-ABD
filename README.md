@@ -2,7 +2,7 @@
 
 An AI-powered interview coach: personalized study plans from your resume, voice-enabled mock interviews with adaptive coding rounds, honest per-answer scoring, live company-specific research, and a readiness debrief.
 
-**v3 works with ANY major LLM provider** — Anthropic, OpenAI, or Google Gemini — switched by one line in `.env`.
+**Works with ANY major LLM provider** — Anthropic, OpenAI, or Google Gemini — switched by one line in `.env`.
 
 ## Architecture
 
