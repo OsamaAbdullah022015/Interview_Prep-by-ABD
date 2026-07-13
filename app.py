@@ -19,6 +19,7 @@ import io
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import List, Optional
 
@@ -40,6 +41,44 @@ litellm.suppress_debug_info = True
 MODEL = os.getenv("LLM_MODEL", "claude-sonnet-4-6")
 STATIC_DIR = Path(__file__).parent / "static"
 
+# --- Resilience config -----------------------------------------------------
+# Transient failures worth retrying/falling back on (provider overload, rate
+# limits, gateway hiccups). The Gemini "high demand" 503 lands here.
+_TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
+_TRANSIENT_NAMES = (
+    "ServiceUnavailable", "RateLimit", "InternalServer",
+    "APIConnection", "Timeout", "Overloaded",
+)
+LLM_MAX_ATTEMPTS = int(os.getenv("LLM_MAX_ATTEMPTS", "4"))  # per model
+
+
+def _is_transient(exc: Exception) -> bool:
+    """True for temporary provider failures that a retry/fallback can fix."""
+    code = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    if code in _TRANSIENT_STATUS:
+        return True
+    return any(n in type(exc).__name__ for n in _TRANSIENT_NAMES)
+
+
+def _fallback_models() -> List[str]:
+    """Lighter models to try if the primary is overloaded. Only include a model
+    whose provider key is actually present, and never the primary itself. A
+    same-provider 'flash/mini' is usually up even when the big model is slammed."""
+    candidates: List[str] = []
+    if os.getenv("GEMINI_API_KEY"):
+        candidates += ["gemini/gemini-2.5-flash", "gemini/gemini-2.0-flash"]
+    if os.getenv("ANTHROPIC_API_KEY"):
+        candidates += ["claude-haiku-4-5-20251001"]
+    if os.getenv("OPENAI_API_KEY"):
+        candidates += ["gpt-4o-mini"]
+    seen = {MODEL}
+    ordered = []
+    for m in candidates:
+        if m not in seen:
+            ordered.append(m)
+            seen.add(m)
+    return ordered
+
 app = FastAPI(title="ABD's Interview Preparation Agent")
 
 
@@ -48,15 +87,34 @@ app = FastAPI(title="ABD's Interview Preparation Agent")
 # ---------------------------------------------------------------------------
 
 def ask_llm(prompt: str, max_tokens: int = 1024) -> str:
-    """One call, any provider. LiteLLM reads the matching key from the env
-    (ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / ...) based on MODEL."""
-    resp = completion(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=max_tokens,
-        reasoning_effort="none"
-    )
-    return resp.choices[0].message.content or ""
+    """One call, any provider — resilient to transient overload (e.g. Gemini's
+    503 "high demand") and rate limits. Retries the primary model with
+    exponential backoff, then falls back to lighter models whose provider key
+    is present. LiteLLM reads the matching key from the env based on the model."""
+    messages = [{"role": "user", "content": prompt}]
+    last_exc: Optional[Exception] = None
+
+    for model in [MODEL, *_fallback_models()]:
+        for attempt in range(LLM_MAX_ATTEMPTS):
+            try:
+                resp = completion(
+                    model=model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    reasoning_effort="none",
+                    timeout=60,
+                )
+                return resp.choices[0].message.content or ""
+            except Exception as exc:  # noqa: BLE001
+                if not _is_transient(exc):
+                    raise  # real error (bad key, bad request) — don't mask it
+                last_exc = exc
+                if attempt < LLM_MAX_ATTEMPTS - 1:
+                    time.sleep(2 ** attempt)  # 1s, 2s, 4s ...
+        # this model kept failing → try the next fallback
+
+    # every model exhausted its retries
+    raise last_exc if last_exc else RuntimeError("LLM call failed with no response")
 
 
 def parse_json(text: str) -> dict:
@@ -69,6 +127,11 @@ def parse_json(text: str) -> dict:
 
 
 def error_response(exc: Exception) -> JSONResponse:
+    if _is_transient(exc):
+        return JSONResponse(
+            status_code=503,
+            content={"error": "The model is busy right now. Please try again in a moment."},
+        )
     return JSONResponse(status_code=500, content={"error": str(exc)})
 
 
