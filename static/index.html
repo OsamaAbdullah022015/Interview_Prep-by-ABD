@@ -216,31 +216,78 @@ function speak(text) {
 }
 window.replayQuestion = (i) => speak(S.transcript[i].text);
 
+let manualStop = false;
+let lastInterim = "";
+
 window.toggleMic = function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { showError("Speech recognition isn't supported in this browser. Chrome or Edge work best."); return; }
-  if (S.listening) { recognition?.stop(); return; }
+  if (S.listening) {
+    manualStop = true;          // user deliberately stopped — don't auto-restart
+    recognition?.stop();
+    return;
+  }
   showError("");
+  manualStop = false;
+  const box = $("answerBox");
+  if (box) box.dataset.committed = box.value || "";   // keep any text already in the box
+  startRecognition(SR);
+};
+
+function startRecognition(SR) {
   recognition = new SR();
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.lang = navigator.language || "en-US";
+  lastInterim = "";
+
   recognition.onresult = (e) => {
-    let finalText = "";
+    let finalText = "", interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+      else interim += e.results[i][0].transcript;
     }
     const box = $("answerBox");
-    if (finalText && box) box.value = (box.value + " " + finalText).trim();
+    if (finalText) {
+      if (box) box.dataset.committed = ((box.dataset.committed || "") + " " + finalText).trim();
+      lastInterim = "";
+    } else {
+      lastInterim = interim;
+    }
+    if (box) box.value = (box.dataset.committed || "") + (interim ? " " + interim : "");
   };
+
   recognition.onerror = (e) => {
-    if (e.error === "not-allowed") showError("Microphone access was blocked. Allow it in your browser settings.");
+    if (e.error === "not-allowed") {
+      showError("Microphone access was blocked. Allow it in your browser settings.");
+      manualStop = true;
+    } else if (e.error === "audio-capture") {
+      showError("No microphone was found.");
+      manualStop = true;
+    }
+    // "no-speech" / "network" / other transient errors: onend below will auto-restart
+  };
+
+  recognition.onend = () => {
+    const box = $("answerBox");
+    if (lastInterim && box) {
+      // Commit whatever was still "in flight" (not yet finalized) so a restart
+      // doesn't silently drop the tail end of what was just said.
+      box.dataset.committed = ((box.dataset.committed || "") + " " + lastInterim).trim();
+      box.value = box.dataset.committed;
+      lastInterim = "";
+    }
+    if (!manualStop) {
+      // Browser silently closed the session (common after a short pause) — resume
+      // automatically so the candidate's answer isn't cut off mid-sentence.
+      try { startRecognition(SR); return; } catch (_) { /* fall through to stopped state */ }
+    }
     S.listening = false; renderMicState();
   };
-  recognition.onend = () => { S.listening = false; renderMicState(); };
+
   recognition.start();
   S.listening = true; renderMicState();
-};
+}
 
 function renderMicState() {
   const b = $("micBtn");
@@ -502,7 +549,7 @@ function viewInterview() {
   ${S.loading ? spinner(S.loading) : ""}
   ${awaiting ? `
     <div class="card">
-      <textarea id="answerBox" class="${isCoding ? "code" : ""}" placeholder="${isCoding
+      <textarea id="answerBox" class="${isCoding ? "code" : ""}" oninput="this.dataset.committed=this.value" placeholder="${isCoding
         ? "Write your solution here (any language). Talk through your approach in comments — interviewers score the thought process too."
         : S.voiceOn
           ? "Tap the mic and answer out loud — your words appear here. You can edit before submitting."
