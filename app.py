@@ -66,7 +66,8 @@ def _fallback_models() -> List[str]:
     same-provider 'flash/mini' is usually up even when the big model is slammed."""
     candidates: List[str] = []
     if os.getenv("GEMINI_API_KEY"):
-        candidates += ["gemini/gemini-2.5-flash", "gemini/gemini-2.0-flash"]
+        # Gemini 3-series only: older 2.x models 404 for newly-created projects.
+        candidates += ["gemini/gemini-3.1-flash-lite"]
     if os.getenv("ANTHROPIC_API_KEY"):
         candidates += ["claude-haiku-4-5-20251001"]
     if os.getenv("OPENAI_API_KEY"):
